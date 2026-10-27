@@ -7,7 +7,7 @@
 <style>
   :root {
     --bg: #f5f6f8; --card: #ffffff; --text: #1d2330; --muted: #6b7280; --line: #e3e6eb;
-    --accent: #2f5bd3; --ok: #15803d; --ok-bg: #e8f6ec; --bad: #c62828; --bad-bg: #fdecec;
+    --accent: #2f5bd3; --accent-bg: #eef2fc; --ok: #15803d; --ok-bg: #e8f6ec; --bad: #c62828; --bad-bg: #fdecec;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
@@ -23,6 +23,8 @@
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
   label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
   input, select { font: inherit; font-size: 16px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); background: #fff; width: 100%; }
+  input.custom { margin-top: 4px; border-color: var(--accent); }
+  input.custom[hidden] { display: none; }
   button { margin-top: 12px; font: inherit; font-size: 16px; font-weight: 600; padding: 11px 18px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer; width: 100%; }
   button:disabled { opacity: .5; cursor: default; }
   .result { margin-top: 12px; padding: 14px; border-radius: 10px; font-size: 26px; font-weight: 800; text-align: center; display: none; }
@@ -34,6 +36,11 @@
   th { font-size: 13px; color: var(--muted); font-weight: 600; }
   .empty { color: var(--muted); margin-top: 12px; }
   .hint { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+  .rules { background: var(--accent-bg); border-color: #d6def5; }
+  .rules ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+  .rules li { display: flex; gap: 10px; align-items: baseline; font-size: 15px; line-height: 1.45; }
+  .rules .tag { flex: none; font-size: 12px; font-weight: 700; color: var(--accent); background: #fff; border: 1px solid #d6def5; border-radius: 999px; padding: 2px 9px; min-width: 64px; text-align: center; }
+  .rules .ex { color: var(--muted); font-size: 13px; }
 </style>
 </head>
 <body>
@@ -42,13 +49,27 @@
   <p class="sub">예약 규칙은 모두 solution.py가 판단합니다. 이 페이지는 입력을 넘기고 결과만 보여 줍니다.</p>
   <div id="status">solution.py 불러오는 중… (처음엔 10초쯤 걸릴 수 있어요)</div>
 
+  <section class="rules">
+    <h2>예약 조건</h2>
+    <ul>
+      <li><span class="tag">강의실</span><span>A101 · A102 · B201</span></li>
+      <li><span class="tag">요일</span><span>월 ~ 금 <span class="ex">(토·일 불가)</span></span></li>
+      <li><span class="tag">운영 시간</span><span>9시 ~ 21시, 정각 단위 <span class="ex">(10.5시 같은 시각 불가)</span></span></li>
+      <li><span class="tag">최대 길이</span><span>한 번에 3시간까지 <span class="ex">(9~12시 가능, 9~13시 불가)</span></span></li>
+      <li><span class="tag">겹침</span><span>같은 강의실·요일에 시간이 겹치면 불가 <span class="ex">(10~12시 예약 뒤 12시 시작은 가능)</span></span></li>
+      <li><span class="tag">1인 제한</span><span>한 사람은 하루 2건까지 <span class="ex">(강의실이 달라도 합산)</span></span></li>
+      <li><span class="tag">취소</span><span>본인 이름으로 한 예약만 취소 가능</span></li>
+    </ul>
+    <p class="hint">위 안내는 설명일 뿐이고, 실제 판단은 solution.py가 합니다.</p>
+  </section>
+
   <section>
     <h2>예약하기</h2>
     <div class="grid">
-      <label>강의실 <input id="b-room" list="rooms" value="A101"></label>
-      <label>요일 <input id="b-day" list="days" value="월"></label>
-      <label>시작(시) <input id="b-start" inputmode="decimal" value="10"></label>
-      <label>끝(시) <input id="b-end" inputmode="decimal" value="12"></label>
+      <label>강의실 <select id="b-room"></select><input id="b-room-x" class="custom" placeholder="직접 입력" hidden></label>
+      <label>요일 <select id="b-day"></select><input id="b-day-x" class="custom" placeholder="직접 입력" hidden></label>
+      <label>시작 <select id="b-start"></select><input id="b-start-x" class="custom" inputmode="decimal" placeholder="예: 10.5" hidden></label>
+      <label>끝 <select id="b-end"></select><input id="b-end-x" class="custom" inputmode="decimal" placeholder="예: 22" hidden></label>
       <label>이름 <input id="b-name" placeholder="예: 김민수"></label>
     </div>
     <button id="b-btn" disabled>예약</button>
@@ -58,9 +79,9 @@
   <section>
     <h2>취소하기</h2>
     <div class="grid">
-      <label>강의실 <input id="c-room" list="rooms" value="A101"></label>
-      <label>요일 <input id="c-day" list="days" value="월"></label>
-      <label>시작(시) <input id="c-start" inputmode="decimal" value="10"></label>
+      <label>강의실 <select id="c-room"></select><input id="c-room-x" class="custom" placeholder="직접 입력" hidden></label>
+      <label>요일 <select id="c-day"></select><input id="c-day-x" class="custom" placeholder="직접 입력" hidden></label>
+      <label>시작 <select id="c-start"></select><input id="c-start-x" class="custom" inputmode="decimal" placeholder="예: 13" hidden></label>
       <label>이름 <input id="c-name" placeholder="예약한 사람 이름"></label>
     </div>
     <button id="c-btn" disabled>취소</button>
@@ -76,14 +97,12 @@
     <div id="schedule"></div>
     <p class="hint">새로고침하면 예약이 모두 지워집니다(이 페이지를 연 동안만 기억해요).</p>
   </section>
-
-  <datalist id="rooms"></datalist>
-  <datalist id="days"></datalist>
 </main>
 
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
+const CUSTOM = "__custom__";
 let py = null;
 
 // 화면 입력(글자)을 파이썬 값으로만 바꿔 줍니다. 규칙 판단은 하지 않습니다.
@@ -116,13 +135,27 @@ def web_options():
     return json.dumps([list(g.get("ROOMS", ())), list(g.get("DAYS", ()))], ensure_ascii=False)
 `;
 
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// 목록 + 맨 아래 "직접 입력…" (틀린 값을 일부러 넣어 볼 때 사용)
+function fillPicker(id, values, labelOf, selected) {
+  const sel = $(id), box = $(id + "-x");
+  sel.innerHTML = values.map((v) => `<option value="${esc(v)}">${esc(labelOf(v))}</option>`).join("") +
+    `<option value="${CUSTOM}">직접 입력…</option>`;
+  if (selected !== undefined) sel.value = String(selected);
+  sel.onchange = () => { box.hidden = sel.value !== CUSTOM; if (!box.hidden) box.focus(); };
+}
+
+function pick(id) {
+  const sel = $(id);
+  return sel.value === CUSTOM ? $(id + "-x").value : sel.value;
+}
+
 function showResult(el, ok, detail) {
   el.className = "result " + (ok ? "ok" : "bad");
   el.innerHTML = (ok ? "성공" : "실패") + `<small>${detail}</small>`;
-}
-
-function esc(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
 function renderSchedule() {
@@ -157,24 +190,33 @@ async function start() {
   }
 
   const [rooms, days] = JSON.parse(py.globals.get("web_options")());
-  $("rooms").innerHTML = rooms.map((r) => `<option value="${esc(r)}">`).join("");
-  $("days").innerHTML = days.map((d) => `<option value="${esc(d)}">`).join("");
+  const hours = Array.from({ length: 16 }, (_, i) => i + 8); // 8시 ~ 23시 (고르기 편하게 보여 주는 목록)
+  const same = (v) => v, hourLabel = (h) => h + "시";
+
+  fillPicker("b-room", rooms, same); fillPicker("c-room", rooms, same);
+  fillPicker("b-day", days, same);   fillPicker("c-day", days, same);
+  fillPicker("b-start", hours, hourLabel, 10);
+  fillPicker("b-end", hours, hourLabel, 12);
+  fillPicker("c-start", hours, hourLabel, 10);
+
   $("s-room").innerHTML = rooms.map((r) => `<option>${esc(r)}</option>`).join("");
   $("s-day").innerHTML = days.map((d) => `<option>${esc(d)}</option>`).join("");
   $("s-room").onchange = $("s-day").onchange = renderSchedule;
   renderSchedule();
 
   $("b-btn").onclick = () => {
-    const v = ["b-room", "b-day", "b-start", "b-end", "b-name"].map((id) => $(id).value);
-    const ok = py.globals.get("web_book")(...v);
-    showResult($("b-result"), ok, `${esc(v[4])} · ${esc(v[0])} · ${esc(v[1])} · ${esc(v[2])}~${esc(v[3])}시`);
-    showScheduleFor(v[0], v[1]);
+    const [room, day, s, e] = ["b-room", "b-day", "b-start", "b-end"].map(pick);
+    const name = $("b-name").value;
+    const ok = py.globals.get("web_book")(room, day, s, e, name);
+    showResult($("b-result"), ok, `${esc(name)} · ${esc(room)} · ${esc(day)} · ${esc(s)}~${esc(e)}시`);
+    showScheduleFor(room, day);
   };
   $("c-btn").onclick = () => {
-    const v = ["c-room", "c-day", "c-start", "c-name"].map((id) => $(id).value);
-    const ok = py.globals.get("web_cancel")(...v);
-    showResult($("c-result"), ok, `${esc(v[3])} · ${esc(v[0])} · ${esc(v[1])} · ${esc(v[2])}시 예약 취소`);
-    showScheduleFor(v[0], v[1]);
+    const [room, day, s] = ["c-room", "c-day", "c-start"].map(pick);
+    const name = $("c-name").value;
+    const ok = py.globals.get("web_cancel")(room, day, s, name);
+    showResult($("c-result"), ok, `${esc(name)} · ${esc(room)} · ${esc(day)} · ${esc(s)}시 예약 취소`);
+    showScheduleFor(room, day);
   };
   $("b-btn").disabled = $("c-btn").disabled = false;
   $("status").className = "ready";
