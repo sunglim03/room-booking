@@ -6,6 +6,7 @@ OPEN_HOUR = 9
 CLOSE_HOUR = 21
 MAX_HOURS = 3
 MAX_PER_PERSON_PER_DAY = 2
+NAME_REQUIRED_MESSAGE = "이름기입필수"
 
 
 def _is_hour(value):
@@ -18,12 +19,22 @@ def _valid_place(room, day):
     return isinstance(room, str) and isinstance(day, str) and room in ROOMS and day in DAYS
 
 
+def name_error(name):
+    """이름이 비어 있으면 안내 문구를, 괜찮으면 빈 문자열을 돌려줌."""
+    if not isinstance(name, str) or not name.strip():
+        return NAME_REQUIRED_MESSAGE
+    return ""
+
+
 class RoomBooking:
     def __init__(self):
         # (강의실, 요일) -> [(start, end, name), ...]
         self._bookings = {}
 
     def book(self, room, day, start, end, name):
+        # 0. 이름이 비어 있음 (문제지에 없는 추가 규칙)
+        if name_error(name):
+            return False
         # 1. 없는 강의실·요일
         if not _valid_place(room, day):
             return False

@@ -28,6 +28,9 @@
   label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
   input, select { font: inherit; font-size: 16px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); background: #fff; width: 100%; }
   input.custom { margin-top: 4px; border-color: var(--accent); }
+  input.invalid { border: 2px solid var(--bad); background: var(--bad-bg); }
+  .field-msg { color: var(--bad); font-size: 13px; font-weight: 700; min-height: 0; }
+  .field-msg:empty { display: none; }
   input.custom[hidden] { display: none; }
   button { margin-top: 12px; font: inherit; font-size: 16px; font-weight: 600; padding: 11px 18px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer; width: 100%; }
   button:disabled { opacity: .5; cursor: default; }
@@ -62,6 +65,7 @@
       <li><span class="tag">최대 길이</span><span>한 번에 3시간까지 <span class="ex">(9~12시 가능, 9~13시 불가)</span></span></li>
       <li><span class="tag">겹침</span><span>같은 강의실·요일에 시간이 겹치면 불가 <span class="ex">(10~12시 예약 뒤 12시 시작은 가능)</span></span></li>
       <li><span class="tag">1인 제한</span><span>한 사람은 하루 2건까지 <span class="ex">(강의실이 달라도 합산)</span></span></li>
+      <li><span class="tag">이름</span><span>이름은 꼭 적어야 합니다</span></li>
       <li><span class="tag">취소</span><span>본인 이름으로 한 예약만 취소 가능</span></li>
     </ul>
     <p class="hint">위 안내는 설명일 뿐이고, 실제 판단은 solution.py가 합니다.</p>
@@ -74,7 +78,7 @@
       <label>요일 <select id="b-day"></select><input id="b-day-x" class="custom" placeholder="직접 입력" hidden></label>
       <label>시작 <select id="b-start"></select><input id="b-start-x" class="custom" inputmode="decimal" placeholder="예: 10.5" hidden></label>
       <label>끝 <select id="b-end"></select><input id="b-end-x" class="custom" inputmode="decimal" placeholder="예: 22" hidden></label>
-      <label>이름 <input id="b-name" placeholder="예: 김민수"></label>
+      <label>이름 <input id="b-name" placeholder="예: 김민수"><span id="b-name-msg" class="field-msg"></span></label>
     </div>
     <button id="b-btn" disabled>예약</button>
     <div id="b-result" class="result"></div>
@@ -86,7 +90,7 @@
       <label>강의실 <select id="c-room"></select><input id="c-room-x" class="custom" placeholder="직접 입력" hidden></label>
       <label>요일 <select id="c-day"></select><input id="c-day-x" class="custom" placeholder="직접 입력" hidden></label>
       <label>시작 <select id="c-start"></select><input id="c-start-x" class="custom" inputmode="decimal" placeholder="예: 13" hidden></label>
-      <label>이름 <input id="c-name" placeholder="예약한 사람 이름"></label>
+      <label>이름 <input id="c-name" placeholder="예약한 사람 이름"><span id="c-name-msg" class="field-msg"></span></label>
     </div>
     <button id="c-btn" disabled>취소</button>
     <div id="c-result" class="result"></div>
@@ -134,6 +138,10 @@ def web_cancel(room, day, start, name):
 def web_schedule(room, day):
     return json.dumps([list(b) for b in (_rb.get_schedule(room, day) or [])], ensure_ascii=False)
 
+def web_name_error(name):
+    f = globals().get("name_error")
+    return f(name) if f else ""
+
 def web_options():
     g = globals()
     return json.dumps([list(g.get("ROOMS", ())), list(g.get("DAYS", ()))], ensure_ascii=False)
@@ -155,6 +163,21 @@ function fillPicker(id, values, labelOf, selected) {
 function pick(id) {
   const sel = $(id);
   return sel.value === CUSTOM ? $(id + "-x").value : sel.value;
+}
+
+// solution.py가 이름 문구를 주면 이름 칸에 표시하고 true를 돌려줌
+function showNameError(prefix) {
+  const input = $(prefix + "-name"), msg = $(prefix + "-name-msg");
+  const text = py.globals.get("web_name_error")(input.value);
+  msg.textContent = text;
+  input.classList.toggle("invalid", !!text);
+  if (text) { $(prefix + "-result").className = "result"; input.focus(); }
+  return !!text;
+}
+
+function clearNameError(prefix) {
+  $(prefix + "-name-msg").textContent = "";
+  $(prefix + "-name").classList.remove("invalid");
 }
 
 function showResult(el, ok, detail) {
@@ -208,9 +231,13 @@ async function start() {
   $("s-room").onchange = $("s-day").onchange = renderSchedule;
   renderSchedule();
 
+  $("b-name").oninput = () => clearNameError("b");
+  $("c-name").oninput = () => clearNameError("c");
+
   $("b-btn").onclick = () => {
     const [room, day, s, e] = ["b-room", "b-day", "b-start", "b-end"].map(pick);
     const name = $("b-name").value;
+    if (showNameError("b")) return;
     const ok = py.globals.get("web_book")(room, day, s, e, name);
     showResult($("b-result"), ok, `${esc(name)} · ${esc(room)} · ${esc(day)} · ${esc(s)}~${esc(e)}시`);
     showScheduleFor(room, day);
@@ -218,6 +245,7 @@ async function start() {
   $("c-btn").onclick = () => {
     const [room, day, s] = ["c-room", "c-day", "c-start"].map(pick);
     const name = $("c-name").value;
+    if (showNameError("c")) return;
     const ok = py.globals.get("web_cancel")(room, day, s, name);
     showResult($("c-result"), ok, `${esc(name)} · ${esc(room)} · ${esc(day)} · ${esc(s)}시 예약 취소`);
     showScheduleFor(room, day);
