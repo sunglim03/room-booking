@@ -7,18 +7,22 @@
 <style>
   :root {
     --bg: #f5f6f8; --card: #ffffff; --text: #1d2330; --muted: #6b7280; --line: #e3e6eb;
-    --accent: #2f5bd3; --accent-bg: #eef2fc; --ok: #15803d; --ok-bg: #e8f6ec; --bad: #c62828; --bad-bg: #fdecec;
+    --accent: #7a1f26; --accent-bg: rgba(250, 240, 241, .9); --accent-line: #ecd3d5;
+    --ok: #15803d; --ok-bg: #e8f6ec; --bad: #c62828; --bad-bg: #fdecec;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
     font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; }
+  /* 한국교통대 엠블럼을 배경에 흐릿하게 고정 */
+  body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background: url("emblem.png") center / min(90vw, 90vh, 640px) no-repeat; opacity: .09; }
   main { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
-  h1 { font-size: 24px; margin: 0 0 4px; }
+  h1 { font-size: 24px; margin: 0 0 4px; color: var(--accent); }
   .sub { color: var(--muted); margin: 0 0 20px; font-size: 14px; }
   #status { padding: 12px 14px; border-radius: 10px; background: #fff7e0; margin-bottom: 16px; font-size: 14px; }
   #status.ready { display: none; }
   #status.error { background: var(--bad-bg); color: var(--bad); }
-  section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+  section { background: rgba(255, 255, 255, .86); backdrop-filter: blur(1px); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
   h2 { font-size: 18px; margin: 0 0 12px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
   label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
@@ -36,10 +40,10 @@
   th { font-size: 13px; color: var(--muted); font-weight: 600; }
   .empty { color: var(--muted); margin-top: 12px; }
   .hint { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
-  .rules { background: var(--accent-bg); border-color: #d6def5; }
+  .rules { background: var(--accent-bg); border-color: var(--accent-line); }
   .rules ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
   .rules li { display: flex; gap: 10px; align-items: baseline; font-size: 15px; line-height: 1.45; }
-  .rules .tag { flex: none; font-size: 12px; font-weight: 700; color: var(--accent); background: #fff; border: 1px solid #d6def5; border-radius: 999px; padding: 2px 9px; min-width: 64px; text-align: center; }
+  .rules .tag { flex: none; font-size: 12px; font-weight: 700; color: var(--accent); background: #fff; border: 1px solid var(--accent-line); border-radius: 999px; padding: 2px 9px; min-width: 64px; text-align: center; }
   .rules .ex { color: var(--muted); font-size: 13px; }
 </style>
 </head>
